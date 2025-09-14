@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Group Chat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Join Screen -->
+  <div id="join-screen">
+    <h2>Join Group Chat</h2>
+    <input id="username" placeholder="Enter your name">
+    <input id="groupname" placeholder="Enter group name">
+    <button id="joinBtn">Join Group</button>
+  </div>
+  
+  <!-- Chat Screen -->
+  <div id="chat-screen" style="display:none;">
+    <div class="chat-header">
+      <h3 id="group-title"></h3>
+      <button id="leaveBtn">Leave Group</button>
+    </div>
+    <ul id="messages"></ul>
+    <form id="chat-form">
+      <input id="message-input" autocomplete="off" placeholder="Type a message..." />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const joinScreen = document.getElementById('join-screen');
+    const chatScreen = document.getElementById('chat-screen');
+    const usernameInput = document.getElementById('username');
+    const groupInput = document.getElementById('groupname');
+    const messagesList = document.getElementById('messages');
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const groupTitle = document.getElementById('group-title');
+    const leaveBtn = document.getElementById('leaveBtn');
+
+    let username, groupname;
+
+    // Restore session
+    if(localStorage.getItem("username") && localStorage.getItem("groupname")) {
+      username = localStorage.getItem("username");
+      groupname = localStorage.getItem("groupname");
+      joinGroup(username, groupname);
+      loadMessages(); // restore messages
+    }
+
+    document.getElementById('joinBtn').onclick = () => {
+      username = usernameInput.value.trim();
+      groupname = groupInput.value.trim();
+
+      if(username && groupname) {
+        localStorage.setItem("username", username);
+        localStorage.setItem("groupname", groupname);
+        joinGroup(username, groupname);
+      }
+    };
+
+    function joinGroup(user, group) {
+      socket.emit('join group', { username: user, groupname: group });
+      joinScreen.style.display = 'none';
+      chatScreen.style.display = 'flex';
+      groupTitle.textContent = `Group: ${group}`;
+    }
+
+    // Leave group
+    leaveBtn.onclick = () => {
+      socket.emit("leave group");
+      localStorage.removeItem("username");
+      localStorage.removeItem("groupname");
+      localStorage.removeItem("messages");
+      chatScreen.style.display = "none";
+      joinScreen.style.display = "flex";
+      messagesList.innerHTML = "";
+    };
+
+    // Send message
+    chatForm.onsubmit = (e) => {
+      e.preventDefault();
+      const msg = messageInput.value.trim();
+      if(msg) {
+        socket.emit('chat message', msg);
+        messageInput.value = '';
+      }
+    };
+
+    // Receive message
+    socket.on('chat message', (msg) => {
+      addMessage(msg.user, msg.text);
+    });
+
+    function addMessage(user, text) {
+      const item = document.createElement('li');
+      item.innerHTML = `<span class="user">${user}:</span> <span class="text">${text}</span>`;
+      messagesList.appendChild(item);
+      messagesList.scrollTop = messagesList.scrollHeight;
+
+      // Save messages to localStorage
+      let saved = JSON.parse(localStorage.getItem("messages")) || [];
+      saved.push({ user, text });
+      localStorage.setItem("messages", JSON.stringify(saved));
+    }
+
+    function loadMessages() {
+      let saved = JSON.parse(localStorage.getItem("messages")) || [];
+      saved.forEach(m => {
+        const item = document.createElement('li');
+        item.innerHTML = `<span class="user">${m.user}:</span> <span class="text">${m.text}</span>`;
+        messagesList.appendChild(item);
+      });
+      messagesList.scrollTop = messagesList.scrollHeight;
+    }
+  </script>
+</body>
+</html>

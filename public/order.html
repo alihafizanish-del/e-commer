@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Now</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Place Your Order</h1>
+  </header>
+
+  <main>
+    <form action="/submit-order" method="POST" class="order-form">
+      <label>Enter Your Full Name</label>
+      <input type="text" name="fullname" required>
+
+      <label>Enter Your Email Address</label>
+      <input type="email" name="email" required>
+
+      <label>Enter Your Location</label>
+      <input type="text" name="city" required>
+
+      <button type="submit">In Order</button>
+    </form>
+  </main>
+</body>
+</html>
